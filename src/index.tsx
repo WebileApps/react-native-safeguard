@@ -17,6 +17,4 @@ const Safeguard = NativeModules.Safeguard
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return Safeguard.multiply(a, b);
-}
+export default Safeguard;
