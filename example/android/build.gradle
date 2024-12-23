@@ -18,4 +18,12 @@ buildscript {
     }
 }
 
+allprojects {
+    repositories {
+        flatDir {
+            dirs project(':react-native-safeguard').projectDir.toString() + '/libs'
+        }
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"

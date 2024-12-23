@@ -4,3 +4,6 @@ extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autoli
 rootProject.name = 'safeguard.example'
 include ':app'
 includeBuild('../node_modules/@react-native/gradle-plugin')
+
+include ':react-native-safeguard'
+project(':react-native-safeguard').projectDir = new File(rootProject.projectDir, '../../android')
