@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -11,18 +10,17 @@ import {
 } from 'react-native';
 import Safeguard from 'react-native-safeguard';
 
-Safeguard.initialize({
-  rootCheckState: 'ERROR',
-  developerOptionsCheckState: 'WARNING',
-  malwareCheckState: 'WARNING',
-  tamperingCheckState: 'WARNING',
-  networkSecurityCheckState: 'WARNING',
-  screenSharingCheckState: 'WARNING',
-  appSpoofingCheckState: 'WARNING',
-  keyloggerCheckState: 'WARNING',
-}).catch((error) => {
-  console.error('Failed to initialize Safeguard:', error);
-});
+const SecurityButton = ({
+  title,
+  onPress,
+}: {
+  title: string;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity style={styles.button} onPress={onPress}>
+    <Text style={styles.buttonText}>{title}</Text>
+  </TouchableOpacity>
+);
 
 export default function App() {
   const handleSecurityCheck = async (
@@ -39,12 +37,6 @@ export default function App() {
       Alert.alert('Error', error.message);
     }
   };
-
-  const SecurityButton = ({ title, onPress }: { title: string; onPress: () => void }) => (
-    <TouchableOpacity style={styles.button} onPress={onPress}>
-      <Text style={styles.buttonText}>{title}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,16 +62,16 @@ export default function App() {
         <SecurityButton
           title="CHECK NETWORK SECURITY"
           onPress={() =>
-            handleSecurityCheck(Safeguard.checkNetwork, 'Network Security Check')
+            handleSecurityCheck(
+              Safeguard.checkNetwork,
+              'Network Security Check'
+            )
           }
         />
         <SecurityButton
           title="CHECK MALWARE/TAMPERING"
           onPress={() =>
-            handleSecurityCheck(
-              Safeguard.checkMalware, 
-              'Malware Check'
-            )
+            handleSecurityCheck(Safeguard.checkMalware, 'Malware Check')
           }
         />
         <SecurityButton

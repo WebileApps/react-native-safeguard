@@ -85,9 +85,7 @@ android {
 repositories {
   mavenCentral()
   google()
-  flatDir {
-    dirs 'libs'
-  }
+  maven { url 'https://jitpack.io' }
 }
 
 def kotlin_version = getExtOrDefault("kotlinVersion")
@@ -98,5 +96,5 @@ dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  api(name: 'protect-release', ext: 'aar')
+  implementation 'com.github.webileapps:safeguardandroid:v0.2.2'
 }

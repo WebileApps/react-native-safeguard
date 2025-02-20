@@ -17,7 +17,7 @@ const Safeguard = NativeModules.Safeguard
       }
     );
 
-export type SecurityCheckState = 'SECURE' | 'WARNING' | 'ERROR';
+export type SecurityCheckState = 'WARNING' | 'ERROR' | 'DISABLED';
 
 export interface SecurityConfig {
   rootCheckState?: SecurityCheckState;

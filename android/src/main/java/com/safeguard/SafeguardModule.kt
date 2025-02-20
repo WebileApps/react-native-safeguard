@@ -4,11 +4,17 @@ import androidx.activity.ComponentActivity
 import com.facebook.react.bridge.*
 import com.webileapps.safeguard.SecurityChecker
 import com.webileapps.safeguard.SecurityConfigManager
+import android.os.Handler
+import android.os.Looper
 
 class SafeguardModule(private val reactContext: ReactApplicationContext) :
-  ReactContextBaseJavaModule(reactContext) {
+  ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
 
   private lateinit var securityChecker: SecurityChecker
+
+  init {
+    reactContext.addLifecycleEventListener(this)
+  }
 
   override fun getName(): String {
     return NAME
@@ -18,42 +24,46 @@ class SafeguardModule(private val reactContext: ReactApplicationContext) :
   fun initialize(config: ReadableMap, promise: Promise) {
     try {
       val securityConfig = SecurityChecker.SecurityConfig(
-        rootCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("rootCheckState") ?: "ERROR"
         ),
-        developerOptionsCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("developerOptionsCheckState") ?: "WARNING"
         ),
-        malwareCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("malwareCheckState") ?: "WARNING"
         ),
-        tamperingCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("tamperingCheckState") ?: "WARNING"
         ),
-        networkSecurityCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("networkSecurityCheckState") ?: "WARNING"
         ),
-        screenSharingCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("screenSharingCheckState") ?: "WARNING"
         ),
-        appSpoofingCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("appSpoofingCheckState") ?: "WARNING"
         ),
-        keyloggerCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("keyloggerCheckState") ?: "WARNING"
         ),
-        appSignature = SecurityChecker.SecurityCheckState.fromString(
-          config.getString("certificateMatchingCheckState") ?: "WARNING"
-        ),
-        ongoingCallCheck = SecurityChecker.SecurityCheckState.fromString(
+        SecurityChecker.SecurityCheckState.fromString(
           config.getString("ongoingCallCheckState") ?: "WARNING"
         ),
-        expectedPackageName = config.getString("expectedPackageName") ?: reactContext.packageName,
-        expectedSignature = config.getString("expectedCertificateHash") ?: ""
+        SecurityChecker.SecurityCheckState.fromString(
+          config.getString("certificateMatchingCheckState") ?: "WARNING"
+        ),
+        config.getString("expectedPackageName") ?: reactContext.packageName,
+        config.getString("expectedCertificateHash") ?: ""
       )
 
       SecurityConfigManager.initialize(reactContext, securityConfig)
       securityChecker = SecurityConfigManager.getSecurityChecker()
+
+//      Handler(Looper.getMainLooper()).postDelayed({
+//        securityChecker.runSecurityChecks()
+//      }, 0)
 
       // Setup call monitoring if available
 //      currentActivity?.let { activity ->
@@ -168,6 +178,24 @@ class SafeguardModule(private val reactContext: ReactApplicationContext) :
     } catch (e: Exception) {
       promise.reject("ERROR", e.message)
     }
+  }
+
+  override fun onHostResume() {
+    // Check if securityChecker is initialized before running security checks
+    if (::securityChecker.isInitialized) {
+          securityChecker.runSecurityChecks()
+    } else {
+        // Optionally log or handle the case when securityChecker is not initialized
+    }
+  }
+
+  override fun onHostPause() {
+    // Optionally handle pause events
+  }
+
+  override fun onHostDestroy() {
+    // Remove the listener to avoid memory leaks
+    reactContext.removeLifecycleEventListener(this)
   }
 
   companion object {
