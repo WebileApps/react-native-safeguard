@@ -64,9 +64,8 @@ RCT_EXPORT_METHOD(checkAll:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkAll:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    [self.securityChecker performAllSecurityChecks];
+    resolve(@"");
 }
 
 RCT_EXPORT_METHOD(checkRoot:(RCTPromiseResolveBlock)resolve
@@ -77,9 +76,8 @@ RCT_EXPORT_METHOD(checkRoot:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkRoot:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    [self.securityChecker checkRoot];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkDeveloperOptions:(RCTPromiseResolveBlock)resolve
@@ -90,9 +88,8 @@ RCT_EXPORT_METHOD(checkDeveloperOptions:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkDeveloperOptions:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    [self.securityChecker checkDeveloperOptions];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkMalware:(RCTPromiseResolveBlock)resolve
@@ -102,10 +99,7 @@ RCT_EXPORT_METHOD(checkMalware:(RCTPromiseResolveBlock)resolve
         reject(@"NOT_INITIALIZED", @"SecurityChecker not initialized. Call initialize() first.", nil);
         return;
     }
-    
-    [self.securityChecker checkMalware:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkNetwork:(RCTPromiseResolveBlock)resolve
@@ -116,9 +110,8 @@ RCT_EXPORT_METHOD(checkNetwork:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkNetwork:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    [self.securityChecker checkNetworkSecurity];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkScreenMirroring:(RCTPromiseResolveBlock)resolve
@@ -129,9 +122,8 @@ RCT_EXPORT_METHOD(checkScreenMirroring:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkScreenSharing:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    [self.securityChecker checkScreenSharing];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkApplicationSpoofing:(RCTPromiseResolveBlock)resolve
@@ -141,10 +133,7 @@ RCT_EXPORT_METHOD(checkApplicationSpoofing:(RCTPromiseResolveBlock)resolve
         reject(@"NOT_INITIALIZED", @"SecurityChecker not initialized. Call initialize() first.", nil);
         return;
     }
-    
-    [self.securityChecker checkAppSpoofing:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    resolve(@"OK");
 }
 
 RCT_EXPORT_METHOD(checkKeyLogger:(RCTPromiseResolveBlock)resolve
@@ -155,9 +144,7 @@ RCT_EXPORT_METHOD(checkKeyLogger:(RCTPromiseResolveBlock)resolve
         return;
     }
     
-    [self.securityChecker checkKeyLogger:^(NSDictionary *result) {
-        resolve(result);
-    }];
+    resolve(@"OK");
 }
 
 #pragma mark - Helper Methods
@@ -171,8 +158,8 @@ RCT_EXPORT_METHOD(checkKeyLogger:(RCTPromiseResolveBlock)resolve
         return SGSecurityLevelError;
     } else if ([levelString isEqualToString:@"WARNING"]) {
         return SGSecurityLevelWarning;
-    } else if ([levelString isEqualToString:@"SECURE"]) {
-        return SGSecurityLevelSecure;
+    } else if ([levelString isEqualToString:@"DISABLED"]) {
+        return SGSecurityLevelDisable;
     }
     
     return defaultLevel;
