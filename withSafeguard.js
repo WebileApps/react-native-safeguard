@@ -99,6 +99,20 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       comment: '//',
     }).contents;
 
+    // Add applicationDidBecomeActive method
+    const applicationDidBecomeActiveMethod = `-(void)applicationDidBecomeActive:(UIApplication *)application {
+  [self.securityChecker performAllSecurityChecks];
+}`;
+
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-ios/application-did-become-active',
+      src: config.modResults.contents,
+      newSrc: applicationDidBecomeActiveMethod,
+      anchor: /@implementation AppDelegate/,
+      offset: 1,
+      comment: '//',
+    }).contents;
+
     // Add property declaration
     const propertyDeclaration =
       '@interface AppDelegate ()\n\n@property(nonatomic, strong) SGSecurityChecker *securityChecker;\n\n@end';
@@ -125,9 +139,8 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
   securityConfig.reverseEngineerLevel = ${securityLevelMap[finalLevels.REVERSE_ENGINEERING_CHECK_STATE]};
   securityConfig.keyLoggersLevel = ${securityLevelMap[finalLevels.KEYLOGGER_CHECK_STATE]};
   securityConfig.audioCallLevel = ${securityLevelMap[finalLevels.ONGOING_CALL_CHECK_STATE]};
-  securityConfig.certificateMatchingLevel = ${securityLevelMap[finalLevels.CERTIFICATE_MATCHING_CHECK_STATE]};
   
-  securityConfig.expectedBundleIdentifier = @"${finalLevels.EXPECTED_PACKAGE_NAME}";
+  securityConfig.expectedBundleIdentifier = @"${finalLevels.EXPECTED_BUNDLE_IDENTIFIER}";
   securityConfig.expectedSignature = @"${finalLevels.EXPECTED_SIGNATURE}";
   self.securityChecker = [[SGSecurityChecker alloc] initWithConfiguration:securityConfig];
   
@@ -158,20 +171,6 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       newSrc: securitySetup,
       anchor: /self\.initialProps = @{};/,
       offset: 1,
-      comment: '//',
-    }).contents;
-
-    // Add applicationDidBecomeActive method
-    const applicationDidBecomeActiveMethod = `-(void)applicationDidBecomeActive:(UIApplication *)application {
-  [self.securityChecker performAllSecurityChecks];
-}`;
-
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-ios/application-did-become-active',
-      src: config.modResults.contents,
-      newSrc: applicationDidBecomeActiveMethod,
-      anchor: /@end/,
-      offset: 0,
       comment: '//',
     }).contents;
 
