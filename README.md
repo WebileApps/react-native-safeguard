@@ -15,10 +15,50 @@ A comprehensive security library for React Native applications that helps protec
 
 ## Installation
 
+### React Native CLI
+
 ```sh
 npm install react-native-safeguard
 # or
 yarn add react-native-safeguard
+```
+
+### Expo
+
+```sh
+expocli install react-native-safeguard
+```
+
+Then add the config plugin to your `app.config.js` or `app.json`:
+
+```js
+module.exports = {
+  // ... other config
+  plugins: [
+    [
+      'react-native-safeguard',
+      {
+        // Android security config
+        securityConfigAndroid: {
+          // your Android-specific settings
+        },
+        // iOS security config - all values must be 'ERROR', 'WARNING', or 'DISABLED'
+        securityConfigiOS: {
+          ROOT_CHECK_STATE: 'WARNING',
+          DEVELOPER_OPTIONS_CHECK_STATE: 'WARNING',
+          SIGNATURE_VERIFICATION_CHECK_STATE: 'WARNING',
+          NETWORK_SECURITY_CHECK_STATE: 'WARNING',
+          SCREEN_SHARING_CHECK_STATE: 'WARNING',
+          APP_SPOOFING_CHECK_STATE: 'WARNING',
+          KEYLOGGER_CHECK_STATE: 'WARNING',
+          ONGOING_CALL_CHECK_STATE: 'WARNING',
+          CERTIFICATE_MATCHING_CHECK_STATE: 'WARNING',
+          EXPECTED_SIGNATURE: '' // Optional: Your app's expected signature
+        }
+      }
+    ]
+  ]
+};
 ```
 
 ### Android Setup
@@ -43,6 +83,44 @@ repositories {
 Run `pod install` in your iOS directory:
 ```sh
 cd ios && pod install
+```
+
+## Expo Config Plugin
+
+When using this library in an Expo project, the config plugin will automatically configure both Android and iOS native code during the build process. The plugin supports the following configuration options:
+
+### Android Configuration
+
+Use the `securityConfigAndroid` object to configure Android-specific security settings:
+
+```js
+securityConfigAndroid: {
+  // Add your Android security configuration key-value pairs
+}
+```
+
+### iOS Configuration
+
+Use the `securityConfigiOS` object to configure iOS security checks. All values must be one of:
+- `'ERROR'` - Fail if the security check fails
+- `'WARNING'` - Show a warning if the security check fails
+- `'DISABLED'` - Disable this security check
+
+Available configuration options:
+
+```js
+securityConfigiOS: {
+  ROOT_CHECK_STATE: 'WARNING',                    // Root/Jailbreak detection
+  DEVELOPER_OPTIONS_CHECK_STATE: 'WARNING',        // Developer options detection
+  SIGNATURE_VERIFICATION_CHECK_STATE: 'WARNING',   // App signature verification
+  NETWORK_SECURITY_CHECK_STATE: 'WARNING',        // Network security checks
+  SCREEN_SHARING_CHECK_STATE: 'WARNING',          // Screen mirroring detection
+  APP_SPOOFING_CHECK_STATE: 'WARNING',           // App spoofing prevention
+  KEYLOGGER_CHECK_STATE: 'WARNING',              // Keylogger detection
+  ONGOING_CALL_CHECK_STATE: 'WARNING',           // Audio call security
+  CERTIFICATE_MATCHING_CHECK_STATE: 'WARNING',    // Certificate validation
+  EXPECTED_SIGNATURE: ''                         // Expected app signature
+}
 ```
 
 ## Usage
