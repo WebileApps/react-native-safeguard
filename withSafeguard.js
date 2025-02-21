@@ -4,6 +4,10 @@ const {
   createRunOncePlugin,
 } = require('@expo/config-plugins');
 
+const {
+  mergeContents,
+} = require('@expo/config-plugins/build/utils/generateCode');
+
 /**
  * Formats a Java/Kotlin map entry from a JS object
  */
@@ -23,17 +27,23 @@ function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
   return withMainActivity(_config, async (config) => {
     const isKotlin = config.modResults.language === 'kt';
 
-    if (config.modResults.language === 'java') {
-      config.modResults.contents = config.modResults.contents.replace(
-        /public class MainActivity extends (.+) {/,
-        'public class MainActivity extends com.safeguard.SafeguardReactActivity {'
-      );
-    } else if (isKotlin) {
-      config.modResults.contents = config.modResults.contents.replace(
-        /class MainActivity : (.+)\(\) \{/,
-        'class MainActivity : com.safeguard.SafeguardReactActivity() {'
-      );
-    }
+    const activitySuperClass = isKotlin
+      ? 'class MainActivity : com.safeguard.SafeguardReactActivity() {'
+      : 'public class MainActivity extends com.safeguard.SafeguardReactActivity {';
+
+    const activityClassMatcher = isKotlin
+      ? /class MainActivity : (.+)\(\) \{/
+      : /public class MainActivity extends (.+) {/;
+
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-android/activity-superclass',
+      src: config.modResults.contents,
+      newSrc: activitySuperClass,
+      anchor: activityClassMatcher,
+      offset: 0,
+      comment: '//',
+      mode: 'replace',
+    }).contents;
 
     // Add securityConfigMap override
     const securityConfigSnippet = formatSecurityConfigMap(
@@ -41,27 +51,14 @@ function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
       isKotlin
     );
 
-    if (isKotlin) {
-      if (
-        !config.modResults.contents.includes('override var securityConfigMap')
-      ) {
-        config.modResults.contents = config.modResults.contents.replace(
-          /\{/, // Insert after class opening
-          `{\n    ${securityConfigSnippet}\n`
-        );
-      }
-    } else {
-      if (
-        !config.modResults.contents.includes(
-          'public Map<String, String> securityConfigMap'
-        )
-      ) {
-        config.modResults.contents = config.modResults.contents.replace(
-          /\{/, // Insert after class opening
-          `{\n    ${securityConfigSnippet}\n`
-        );
-      }
-    }
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-android/security-config',
+      src: config.modResults.contents,
+      newSrc: securityConfigSnippet,
+      anchor: /\{/, // Insert after class opening
+      offset: 1,
+      comment: '//',
+    }).contents;
 
     return config;
   });
@@ -76,10 +73,12 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       NETWORK_SECURITY_CHECK_STATE: 'WARNING',
       SCREEN_SHARING_CHECK_STATE: 'WARNING',
       APP_SPOOFING_CHECK_STATE: 'WARNING',
+      REVERSE_ENGINEERING_CHECK_STATE: 'WARNING',
       KEYLOGGER_CHECK_STATE: 'WARNING',
       ONGOING_CALL_CHECK_STATE: 'WARNING',
       CERTIFICATE_MATCHING_CHECK_STATE: 'WARNING',
       EXPECTED_SIGNATURE: '',
+      EXPECTED_PACKAGE_NAME: '',
     };
 
     const securityLevelMap = {
@@ -91,50 +90,45 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
     const finalLevels = { ...securityLevelDefaults, ...securityConfigiOS };
 
     // Add import
-    if (
-      !config.modResults.contents.includes(
-        '#import <SafeGuardiOS/SGSecurityChecker.h>'
-      )
-    ) {
-      config.modResults.contents = config.modResults.contents.replace(
-        /#import "AppDelegate.h"/,
-        '#import "AppDelegate.h"\n#import <SafeGuardiOS/SGSecurityChecker.h>'
-      );
-    }
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-ios/import',
+      src: config.modResults.contents,
+      newSrc: '#import <SafeGuardiOS/SGSecurityChecker.h>',
+      anchor: /#import "AppDelegate.h"/,
+      offset: 1,
+      comment: '//',
+    }).contents;
 
     // Add property declaration
-    if (
-      !config.modResults.contents.includes(
-        '@property(nonatomic, strong) SGSecurityChecker *securityChecker;'
-      )
-    ) {
-      config.modResults.contents = config.modResults.contents.replace(
-        /@implementation AppDelegate/,
-        '@interface AppDelegate ()\n\n@property(nonatomic, strong) SGSecurityChecker *securityChecker;\n\n@end\n\n@implementation AppDelegate'
-      );
-    }
+    const propertyDeclaration =
+      '@interface AppDelegate ()\n\n@property(nonatomic, strong) SGSecurityChecker *securityChecker;\n\n@end';
+
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-ios/property',
+      src: config.modResults.contents,
+      newSrc: propertyDeclaration,
+      anchor: /@implementation AppDelegate/,
+      offset: 0,
+      comment: '//',
+    }).contents;
 
     // Add security configuration
-    if (
-      !config.modResults.contents.includes(
-        'SGSecurityConfiguration *securityConfig'
-      )
-    ) {
-      const securitySetup = `
+    const securitySetup = `
   SGSecurityConfiguration *securityConfig = [[SGSecurityConfiguration alloc] init];
   
-  securityConfig.rootDetectionLevel = ${securityLevelMap[finalLevels.rootDetection]};
-  securityConfig.developerOptionsLevel = ${securityLevelMap[finalLevels.developerOptions]};
-  securityConfig.signatureVerificationLevel = ${securityLevelMap[finalLevels.signatureVerification]};
-  securityConfig.networkSecurityLevel = ${securityLevelMap[finalLevels.networkSecurity]};
-  securityConfig.screenSharingLevel = ${securityLevelMap[finalLevels.screenSharing]};
-  securityConfig.spoofingLevel = ${securityLevelMap[finalLevels.spoofing]};
-  securityConfig.reverseEngineerLevel = ${securityLevelMap[finalLevels.reverseEngineer]};
-  securityConfig.keyLoggersLevel = ${securityLevelMap[finalLevels.keyLoggers]};
-  securityConfig.audioCallLevel = ${securityLevelMap[finalLevels.audioCall]};
+  securityConfig.rootDetectionLevel = ${securityLevelMap[finalLevels.ROOT_CHECK_STATE]};
+  securityConfig.developerOptionsLevel = ${securityLevelMap[finalLevels.DEVELOPER_OPTIONS_CHECK_STATE]};
+  securityConfig.signatureVerificationLevel = ${securityLevelMap[finalLevels.SIGNATURE_VERIFICATION_CHECK_STATE]};
+  securityConfig.networkSecurityLevel = ${securityLevelMap[finalLevels.NETWORK_SECURITY_CHECK_STATE]};
+  securityConfig.screenSharingLevel = ${securityLevelMap[finalLevels.SCREEN_SHARING_CHECK_STATE]};
+  securityConfig.spoofingLevel = ${securityLevelMap[finalLevels.APP_SPOOFING_CHECK_STATE]};
+  securityConfig.reverseEngineerLevel = ${securityLevelMap[finalLevels.REVERSE_ENGINEERING_CHECK_STATE]};
+  securityConfig.keyLoggersLevel = ${securityLevelMap[finalLevels.KEYLOGGER_CHECK_STATE]};
+  securityConfig.audioCallLevel = ${securityLevelMap[finalLevels.ONGOING_CALL_CHECK_STATE]};
+  securityConfig.certificateMatchingLevel = ${securityLevelMap[finalLevels.CERTIFICATE_MATCHING_CHECK_STATE]};
   
-  securityConfig.expectedBundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
-  securityConfig.expectedSignature = @"${finalLevels.expectedSignature}";
+  securityConfig.expectedBundleIdentifier = @"${finalLevels.EXPECTED_PACKAGE_NAME}";
+  securityConfig.expectedSignature = @"${finalLevels.EXPECTED_SIGNATURE}";
   self.securityChecker = [[SGSecurityChecker alloc] initWithConfiguration:securityConfig];
   
   self.securityChecker.alertHandler = ^(NSString *title, NSString *message, SGSecurityLevel level, void(^completion)(BOOL shouldQuit)) {
@@ -158,19 +152,28 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       });
   };`;
 
-      config.modResults.contents = config.modResults.contents.replace(
-        /self\.initialProps = @{};/,
-        `self.initialProps = @{};\n${securitySetup}`
-      );
-    }
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-ios/security-setup',
+      src: config.modResults.contents,
+      newSrc: securitySetup,
+      anchor: /self\.initialProps = @{};/,
+      offset: 1,
+      comment: '//',
+    }).contents;
 
     // Add applicationDidBecomeActive method
-    if (!config.modResults.contents.includes('applicationDidBecomeActive')) {
-      config.modResults.contents = config.modResults.contents.replace(
-        /@end/,
-        `-(void)applicationDidBecomeActive:(UIApplication *)application {\n  [self.securityChecker performAllSecurityChecks];\n}\n\n@end`
-      );
-    }
+    const applicationDidBecomeActiveMethod = `-(void)applicationDidBecomeActive:(UIApplication *)application {
+  [self.securityChecker performAllSecurityChecks];
+}`;
+
+    config.modResults.contents = mergeContents({
+      tag: 'safeguard-ios/application-did-become-active',
+      src: config.modResults.contents,
+      newSrc: applicationDidBecomeActiveMethod,
+      anchor: /@end/,
+      offset: 0,
+      comment: '//',
+    }).contents;
 
     return config;
   });
