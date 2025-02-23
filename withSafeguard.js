@@ -19,7 +19,7 @@ function formatSecurityConfigMap(configMap, isKotlin = false) {
     .join(',\n        ');
 
   return isKotlin
-    ? `override var securityConfigMap: Map<String, String> = mapOf(\n        ${entries}\n    )`
+    ? `override val securityConfigMap: Map<String, String> = mapOf(\n        ${entries}\n    )`
     : `@Override\n    public Map<String, String> securityConfigMap = new HashMap<String, String>() {{\n        ${entries};\n    }};`;
 }
 
