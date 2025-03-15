@@ -28,7 +28,7 @@ module.exports = {
     },
     plugins: [
       [
-        'react-native-safeguard/withSafeguard',
+        'react-native-safeguard',
         {
           // Android security configuration
           securityConfigAndroid: {

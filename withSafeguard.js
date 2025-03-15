@@ -16,11 +16,11 @@ function formatSecurityConfigMap(configMap, isKotlin = false) {
     .map(([key, value]) =>
       isKotlin ? `"${key}" to "${value}"` : `"${key}", "${value}"`
     )
-    .join(',\n        ');
+    .join(',\n\t\t');
 
   return isKotlin
-    ? `override val securityConfigMap: Map<String, String> = mapOf(\n        ${entries}\n    )`
-    : `@Override\n    public Map<String, String> securityConfigMap = new HashMap<String, String>() {{\n        ${entries};\n    }};`;
+    ? `\toverride val securityConfigMap: Map<String, String> = mapOf(\n\t\t${entries}\n\t)`
+    : `\t@Override\n    public Map<String, String> securityConfigMap = new HashMap<String, String>() {{\n        ${entries};\n    }};`;
 }
 
 function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
@@ -32,18 +32,13 @@ function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
       : 'public class MainActivity extends com.safeguard.SafeguardReactActivity {';
 
     const activityClassMatcher = isKotlin
-      ? /class MainActivity : (.+)\(\) \{/
+      ? 'class MainActivity : ReactActivity() {'
       : /public class MainActivity extends (.+) {/;
 
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-android/activity-superclass',
-      src: config.modResults.contents,
-      newSrc: activitySuperClass,
-      anchor: activityClassMatcher,
-      offset: 0,
-      comment: '//',
-      mode: 'replace',
-    }).contents;
+    config.modResults.contents = config.modResults.contents.replace(
+      activityClassMatcher,
+      activitySuperClass
+    );
 
     // Add securityConfigMap override
     const securityConfigSnippet = formatSecurityConfigMap(
@@ -55,8 +50,8 @@ function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
       tag: 'safeguard-android/security-config',
       src: config.modResults.contents,
       newSrc: securityConfigSnippet,
-      anchor: /\{/, // Insert after class opening
-      offset: 1,
+      anchor: /override fun onCreate(.+) {/, // Insert before onCreate
+      offset: 0,
       comment: '//',
     }).contents;
 
