@@ -1,6 +1,6 @@
 {
   "name": "react-native-safeguard",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A comprehensive security library for React Native applications that helps protect against various security threats including root detection, malware, tampering, and more.",
   "source": "./src/index.tsx",
   "main": "./lib/commonjs/index.js",
@@ -17,7 +17,7 @@
         "default": "./lib/commonjs/index.js"
       }
     },
-    "./withSafeguard": "./withSafeguard.js"
+    "./app.plugin": "./app.plugin.js"
   },
   "files": [
     "src",
