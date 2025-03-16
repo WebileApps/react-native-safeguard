@@ -41,6 +41,18 @@ module.exports = {
         // Android security config
         securityConfigAndroid: {
           // your Android-specific settings
+          ROOT_CHECK_STATE: "ERROR",
+          DEVELOPER_OPTIONS_CHECK_STATE: "ERROR",
+          MALWARE_CHECK_STATE: "ERROR",
+          TAMPERING_CHECK_STATE: "ERROR",
+          APP_SPOOFING_CHECK_STATE: "ERROR",
+          NETWORK_SECURITY_CHECK_STATE: "WARNING",
+          SCREEN_SHARING_CHECK_STATE: "WARNING",
+          KEYLOGGER_CHECK_STATE: "ERROR",
+          ONGOING_CALL_CHECK_STATE: "WARNING",
+          CERTIFICATE_MATCHING_CHECK_STATE: "ERROR",
+          EXPECTED_BUNDLE_IDENTIFIER: "com.your.package",
+          EXPECTED_SIGNATURE: "",
         },
         // iOS security config - all values must be 'ERROR', 'WARNING', or 'DISABLED'
         securityConfigiOS: {
@@ -94,9 +106,21 @@ When using this library in an Expo project, the config plugin will automatically
 Use the `securityConfigAndroid` object to configure Android-specific security settings:
 
 ```js
-securityConfigAndroid: {
-  // Add your Android security configuration key-value pairs
-}
+ securityConfigAndroid: {
+  // your Android-specific settings
+  ROOT_CHECK_STATE: "ERROR",
+  DEVELOPER_OPTIONS_CHECK_STATE: "ERROR",
+  MALWARE_CHECK_STATE: "ERROR",
+  TAMPERING_CHECK_STATE: "ERROR",
+  APP_SPOOFING_CHECK_STATE: "ERROR",
+  NETWORK_SECURITY_CHECK_STATE: "WARNING",
+  SCREEN_SHARING_CHECK_STATE: "WARNING",
+  KEYLOGGER_CHECK_STATE: "ERROR",
+  ONGOING_CALL_CHECK_STATE: "WARNING",
+  CERTIFICATE_MATCHING_CHECK_STATE: "ERROR",
+  EXPECTED_BUNDLE_IDENTIFIER: "com.your.package",
+  EXPECTED_SIGNATURE: "",
+},
 ```
 
 ### iOS Configuration
