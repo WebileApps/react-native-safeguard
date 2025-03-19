@@ -72,6 +72,7 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       KEYLOGGER_CHECK_STATE: 'WARNING',
       ONGOING_CALL_CHECK_STATE: 'WARNING',
       CERTIFICATE_MATCHING_CHECK_STATE: 'WARNING',
+      SIGNATURE_ERROR_DEBUG: false,
       EXPECTED_SIGNATURE: '',
       EXPECTED_PACKAGE_NAME: '',
     };
@@ -128,6 +129,7 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
   securityConfig.rootDetectionLevel = ${securityLevelMap[finalLevels.ROOT_CHECK_STATE]};
   securityConfig.developerOptionsLevel = ${securityLevelMap[finalLevels.DEVELOPER_OPTIONS_CHECK_STATE]};
   securityConfig.signatureVerificationLevel = ${securityLevelMap[finalLevels.SIGNATURE_VERIFICATION_CHECK_STATE]};
+  securityConfig.signatureErrorDebug = ${finalLevels.SIGNATURE_ERROR_DEBUG ? 'YES' : 'NO'};
   securityConfig.networkSecurityLevel = ${securityLevelMap[finalLevels.NETWORK_SECURITY_CHECK_STATE]};
   securityConfig.screenSharingLevel = ${securityLevelMap[finalLevels.SCREEN_SHARING_CHECK_STATE]};
   securityConfig.spoofingLevel = ${securityLevelMap[finalLevels.APP_SPOOFING_CHECK_STATE]};
