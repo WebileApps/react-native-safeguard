@@ -11,7 +11,8 @@ Pod::Spec.new do |s|
   s.license      = package["license"]
   s.authors      = package["author"]
 
-  s.platforms    = { :ios => min_ios_version_supported }
+  min_ios_version = defined?(min_ios_version_supported) ? min_ios_version_supported : '11.0'
+  s.platforms    = { :ios => min_ios_version }
   s.source       = { :git => "https://github.com/rajivnarayana/react-native-safeguard.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm}"
