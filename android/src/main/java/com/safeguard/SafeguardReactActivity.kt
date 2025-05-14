@@ -40,7 +40,13 @@ open class SafeguardReactActivity : ReactActivity() {
       SecurityChecker.SecurityCheckState.fromString(securityConfigMap["CERTIFICATE_MATCHING_CHECK_STATE"] ?: "WARNING"),
       SecurityChecker.SecurityCheckState.fromString(securityConfigMap["ONGOING_CALL_CHECK_STATE"] ?: "DISABLED"),
       securityConfigMap["EXPECTED_PACKAGE_NAME"] ?: "safeguard.example",
-      securityConfigMap["EXPECTED_SIGNATURE"] ?: "FAC61745DC0903786FB9EDE62A962B399F7348F0BB6F899B8332667591033B9C"
+      securityConfigMap["EXPECTED_SIGNATURE"] ?: "FAC61745DC0903786FB9EDE62A962B399F7348F0BB6F899B8332667591033B9C",
+      securityConfigMap["CRITICAL_DIALOG_TITLE"] ?: "Critical Security Alert",
+      securityConfigMap["WARNING_DIALOG_TITLE"] ?: "Warning",
+      securityConfigMap["CRITICAL_DIALOG_POSITIVE_BUTTON"] ?: "OK",
+      securityConfigMap["WARNING_DIALOG_POSITIVE_BUTTON"] ?: "OK",
+      securityConfigMap["CRITICAL_DIALOG_NEGATIVE_BUTTON"] ?: "Cancel",
+      securityConfigMap["WARNING_DIALOG_NEGATIVE_BUTTON"] ?: "Cancel"
     )
     SecurityConfigManager.initialize(this, securityConfig)
     securityChecker = SecurityConfigManager.getSecurityChecker()
