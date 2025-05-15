@@ -75,6 +75,12 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       SIGNATURE_ERROR_DEBUG: false,
       EXPECTED_SIGNATURE: '',
       EXPECTED_PACKAGE_NAME: '',
+      CRITICAL_DIALOG_TITLE: 'Security Alert',
+      WARNING_DIALOG_TITLE: 'Security Warning',
+      CRITICAL_DIALOG_POSITIVE_BUTTON: 'Quit',
+      WARNING_DIALOG_POSITIVE_BUTTON: 'Continue',
+      CRITICAL_DIALOG_NEGATIVE_BUTTON: 'Cancel',
+      WARNING_DIALOG_NEGATIVE_BUTTON: 'Cancel',
     };
 
     const securityLevelMap = {
@@ -143,11 +149,14 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
   
   self.securityChecker.alertHandler = ^(NSString *title, NSString *message, SGSecurityLevel level, void(^completion)(BOOL shouldQuit)) {
       dispatch_async(dispatch_get_main_queue(), ^{
-          UIAlertController *alert = [UIAlertController alertControllerWithTitle:title
+          NSString *alertTitle = level == SGSecurityLevelError ? @"${finalLevels.CRITICAL_DIALOG_TITLE}" : @"${finalLevels.WARNING_DIALOG_TITLE}";
+          NSString *positiveButtonTitle = level == SGSecurityLevelError ? @"${finalLevels.CRITICAL_DIALOG_POSITIVE_BUTTON}" : @"${finalLevels.WARNING_DIALOG_POSITIVE_BUTTON}";
+          
+          UIAlertController *alert = [UIAlertController alertControllerWithTitle:alertTitle
                                                                       message:message
                                                                       preferredStyle:UIAlertControllerStyleAlert];
           
-          UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK"
+          UIAlertAction *okAction = [UIAlertAction actionWithTitle:positiveButtonTitle
                                                           style:UIAlertActionStyleDefault
                                                           handler:^(UIAlertAction * _Nonnull action) {
               if (completion) {
