@@ -96,5 +96,5 @@ dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"
   implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-  implementation 'com.github.webileapps:safeguardandroid:v0.2.10'
+  implementation 'com.github.webileapps:safeguardandroid:v0.2.11'
 }
