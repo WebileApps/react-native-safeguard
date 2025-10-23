@@ -61,6 +61,8 @@ function withSafeguardAndroid(_config, { securityConfigAndroid = {} } = {}) {
 
 function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
   return withAppDelegate(_config, async (config) => {
+    const isSwift = config.modResults.language === 'swift';
+
     const securityLevelDefaults = {
       ROOT_CHECK_STATE: 'DISABLED',
       DEVELOPER_OPTIONS_CHECK_STATE: 'WARNING',
@@ -75,6 +77,7 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       SIGNATURE_ERROR_DEBUG: false,
       EXPECTED_SIGNATURE: '',
       EXPECTED_PACKAGE_NAME: '',
+      EXPECTED_BUNDLE_IDENTIFIER: '',
       CRITICAL_DIALOG_TITLE: 'Security Alert',
       WARNING_DIALOG_TITLE: 'Security Warning',
       CRITICAL_DIALOG_POSITIVE_BUTTON: 'Quit',
@@ -83,53 +86,154 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       WARNING_DIALOG_NEGATIVE_BUTTON: 'Cancel',
     };
 
-    const securityLevelMap = {
-      DISABLED: 'SGSecurityLevelDisable',
-      WARNING: 'SGSecurityLevelWarning',
-      ERROR: 'SGSecurityLevelError',
-    };
-
     const finalLevels = { ...securityLevelDefaults, ...securityConfigiOS };
 
-    // Add import
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-ios/import',
-      src: config.modResults.contents,
-      newSrc: '#import <SafeGuardiOS/SGSecurityChecker.h>',
-      anchor: /#import "AppDelegate.h"/,
-      offset: 1,
-      comment: '//',
-    }).contents;
+    if (isSwift) {
+      // Handle Swift AppDelegate
+      const securityLevelMap = {
+        DISABLED: '.disable',
+        WARNING: '.warning',
+        ERROR: '.error',
+      };
 
-    // Add applicationDidBecomeActive method
-    const applicationDidBecomeActiveMethod = `-(void)applicationDidBecomeActive:(UIApplication *)application {
+      // Add import
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/import',
+        src: config.modResults.contents,
+        newSrc: 'import SafeGuardiOS',
+        anchor: /import React/,
+        offset: 1,
+        comment: '//',
+      }).contents;
+
+      // Add property declaration
+      const propertyDeclaration = `  private var securityChecker: SGSecurityChecker?`;
+
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/property',
+        src: config.modResults.contents,
+        newSrc: propertyDeclaration,
+        anchor: /var reactNativeFactory: RCTReactNativeFactory\?/,
+        offset: 1,
+        comment: '//',
+      }).contents;
+
+      // Add security configuration in didFinishLaunchingWithOptions
+      const securitySetup = `
+    let securityConfig = SGSecurityConfiguration()
+    
+    securityConfig.rootDetectionLevel = ${securityLevelMap[finalLevels.ROOT_CHECK_STATE]}
+    securityConfig.developerOptionsLevel = ${securityLevelMap[finalLevels.DEVELOPER_OPTIONS_CHECK_STATE]}
+    securityConfig.signatureVerificationLevel = ${securityLevelMap[finalLevels.SIGNATURE_VERIFICATION_CHECK_STATE]}
+    securityConfig.signatureErrorDebug = ${finalLevels.SIGNATURE_ERROR_DEBUG ? 'true' : 'false'}
+    securityConfig.networkSecurityLevel = ${securityLevelMap[finalLevels.NETWORK_SECURITY_CHECK_STATE]}
+    securityConfig.screenSharingLevel = ${securityLevelMap[finalLevels.SCREEN_SHARING_CHECK_STATE]}
+    securityConfig.spoofingLevel = ${securityLevelMap[finalLevels.APP_SPOOFING_CHECK_STATE]}
+    securityConfig.reverseEngineerLevel = ${securityLevelMap[finalLevels.REVERSE_ENGINEERING_CHECK_STATE]}
+    securityConfig.keyLoggersLevel = ${securityLevelMap[finalLevels.KEYLOGGER_CHECK_STATE]}
+    securityConfig.audioCallLevel = ${securityLevelMap[finalLevels.ONGOING_CALL_CHECK_STATE]}
+    
+    securityConfig.expectedBundleIdentifier = "${finalLevels.EXPECTED_BUNDLE_IDENTIFIER}"
+    securityConfig.expectedSignature = "${finalLevels.EXPECTED_SIGNATURE}"
+    
+    securityChecker = SGSecurityChecker(configuration: securityConfig)
+    
+    securityChecker?.alertHandler = { title, message, level, completion in
+      DispatchQueue.main.async {
+        let alertTitle = level == .error ? "${finalLevels.CRITICAL_DIALOG_TITLE}" : "${finalLevels.WARNING_DIALOG_TITLE}"
+        let positiveButtonTitle = level == .error ? "${finalLevels.CRITICAL_DIALOG_POSITIVE_BUTTON}" : "${finalLevels.WARNING_DIALOG_POSITIVE_BUTTON}"
+        
+        let alert = UIAlertController(title: alertTitle, message: message, preferredStyle: .alert)
+        
+        let okAction = UIAlertAction(title: positiveButtonTitle, style: .default) { _ in
+          if let completion = completion {
+            completion(level == .error)
+          }
+        }
+        
+        alert.addAction(okAction)
+        
+        if let rootViewController = UIApplication.shared.delegate?.window??.rootViewController {
+          rootViewController.present(alert, animated: true, completion: nil)
+        }
+      }
+    }
+`;
+
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/security-setup',
+        src: config.modResults.contents,
+        newSrc: securitySetup,
+        anchor:
+          /return super\.application\(application, didFinishLaunchingWithOptions: launchOptions\)/,
+        offset: 0,
+        comment: '//',
+      }).contents;
+
+      // Add applicationDidBecomeActive method after the last method in AppDelegate
+      const applicationDidBecomeActiveMethod = `
+  public override func applicationDidBecomeActive(_ application: UIApplication) {
+    securityChecker?.performAllSecurityChecks()
+    super.applicationDidBecomeActive(application)
+  }
+`;
+
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/application-did-become-active',
+        src: config.modResults.contents,
+        newSrc: applicationDidBecomeActiveMethod,
+        anchor:
+          /return super\.application\(application, continue: userActivity, restorationHandler: restorationHandler\) \|\| result/,
+        offset: 2,
+        comment: '//',
+      }).contents;
+    } else {
+      // Handle Objective-C AppDelegate
+      const securityLevelMap = {
+        DISABLED: 'SGSecurityLevelDisable',
+        WARNING: 'SGSecurityLevelWarning',
+        ERROR: 'SGSecurityLevelError',
+      };
+
+      // Add import
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/import',
+        src: config.modResults.contents,
+        newSrc: '#import <SafeGuardiOS/SGSecurityChecker.h>',
+        anchor: /#import "AppDelegate.h"/,
+        offset: 1,
+        comment: '//',
+      }).contents;
+
+      // Add applicationDidBecomeActive method
+      const applicationDidBecomeActiveMethod = `-(void)applicationDidBecomeActive:(UIApplication *)application {
   [self.securityChecker performAllSecurityChecks];
 }`;
 
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-ios/application-did-become-active',
-      src: config.modResults.contents,
-      newSrc: applicationDidBecomeActiveMethod,
-      anchor: /@implementation AppDelegate/,
-      offset: 1,
-      comment: '//',
-    }).contents;
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/application-did-become-active',
+        src: config.modResults.contents,
+        newSrc: applicationDidBecomeActiveMethod,
+        anchor: /@implementation AppDelegate/,
+        offset: 1,
+        comment: '//',
+      }).contents;
 
-    // Add property declaration
-    const propertyDeclaration =
-      '@interface AppDelegate ()\n\n@property(nonatomic, strong) SGSecurityChecker *securityChecker;\n\n@end';
+      // Add property declaration
+      const propertyDeclaration =
+        '@interface AppDelegate ()\n\n@property(nonatomic, strong) SGSecurityChecker *securityChecker;\n\n@end';
 
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-ios/property',
-      src: config.modResults.contents,
-      newSrc: propertyDeclaration,
-      anchor: /@implementation AppDelegate/,
-      offset: 0,
-      comment: '//',
-    }).contents;
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/property',
+        src: config.modResults.contents,
+        newSrc: propertyDeclaration,
+        anchor: /@implementation AppDelegate/,
+        offset: 0,
+        comment: '//',
+      }).contents;
 
-    // Add security configuration
-    const securitySetup = `
+      // Add security configuration
+      const securitySetup = `
   SGSecurityConfiguration *securityConfig = [[SGSecurityConfiguration alloc] init];
   
   securityConfig.rootDetectionLevel = ${securityLevelMap[finalLevels.ROOT_CHECK_STATE]};
@@ -171,14 +275,15 @@ function withSafeguardIOS(_config, { securityConfigiOS = {} } = {}) {
       });
   };`;
 
-    config.modResults.contents = mergeContents({
-      tag: 'safeguard-ios/security-setup',
-      src: config.modResults.contents,
-      newSrc: securitySetup,
-      anchor: /self\.initialProps = @{};/,
-      offset: 1,
-      comment: '//',
-    }).contents;
+      config.modResults.contents = mergeContents({
+        tag: 'safeguard-ios/security-setup',
+        src: config.modResults.contents,
+        newSrc: securitySetup,
+        anchor: /self\.initialProps = @{};/,
+        offset: 1,
+        comment: '//',
+      }).contents;
+    }
 
     return config;
   });
