@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import com.facebook.react.bridge.*
 import com.webileapps.safeguard.SecurityChecker
 import com.webileapps.safeguard.SecurityConfigManager
+import com.webileapps.safeguard.IntegrityTokenListener
 import android.os.Handler
 import android.os.Looper
 
@@ -175,6 +176,27 @@ class SafeguardModule(private val reactContext: ReactApplicationContext) :
       }
       val result = securityChecker.checkKeyLoggerDetection()
       promise.resolve(result)
+    } catch (e: Exception) {
+      promise.reject("ERROR", e.message)
+    }
+  }
+
+  @ReactMethod
+  fun getAndroidIntegrityToken(promise: Promise) {
+    try {
+      if (!::securityChecker.isInitialized) {
+        throw Exception("SecurityChecker not initialized. Call initialize() first.")
+      }
+      securityChecker.deviceIntegrity(object : IntegrityTokenListener {
+
+        override fun onIntegrityTokenSuccess(token: String, nonce: String) {
+          promise.resolve(token)
+        }
+
+        override fun onIntegrityTokenFailure(exception: Exception) {
+          promise.reject("ERROR", exception.message)
+        }
+      })
     } catch (e: Exception) {
       promise.reject("ERROR", e.message)
     }

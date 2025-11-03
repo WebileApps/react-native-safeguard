@@ -75,6 +75,13 @@ export function checkKeyLogger(): Promise<SecurityCheckResult> {
   return Safeguard.checkKeyLogger();
 }
 
+export function getAndroidIntegrityToken(): Promise<string> {
+  if (Platform.OS === 'ios') {
+    throw new Error('getAndroidIntegrityToken is not available on iOS');
+  }
+  return Safeguard.getAndroidIntegrityToken();
+}
+
 export default {
   initialize,
   checkAll,
@@ -85,4 +92,5 @@ export default {
   checkScreenMirroring,
   checkApplicationSpoofing,
   checkKeyLogger,
+  getAndroidIntegrityToken,
 };
